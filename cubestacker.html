@@ -4,12 +4,10 @@
 <head>
 	<script type="text/javascript" src="js/three.js"></script>
 	<script type="text/javascript" src="js/physi.js"></script>
-	<link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <div id="view"></div>
-	<div id="infobox">Description</div>
+  <div id="view"></div> 
 
   <script type="text/javascript">
 
@@ -18,249 +16,105 @@
       Physijs.scripts.worker = 'js/physijs_worker.js';
       Physijs.scripts.ammo = 'ammo.js';
 
-      var renderer, scene, camera, player, cubes, ground, constraint, cubetimer, light, textureloader, max_cubes, lost_cubes, paused;
+      var renderer, scene, camera, player, cubes, ground, constraint, cubetimer;
 
       function initialize() {
           renderer = new THREE.WebGLRenderer({ antialias: true });
-          renderer.setSize(window.innerWidth * 0.95, window.innerHeight);
-					renderer.setClearColor(0xffffff,1);
-					renderer.shadowMap.enabled = true;
-					renderer.shadowMapSoft = true;
-					
-					
-          document.getElementById('view').appendChild( renderer.domElement);
+          renderer.setSize( window.innerWidth * 0.8, window.innerHeight);
+          document.getElementById( 'view' ).appendChild( renderer.domElement );
 
           scene = new Physijs.Scene;
 
-					// Camera
-          camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 1, 500);
-          camera.position.set(30, 80, 70);
-          scene.add(camera);
-					camera.lookAt(scene.position);
-					
-					// Lights
-					light = new THREE.DirectionalLight( 0xFFFFFF );
-					light.position.set( 20, 40, -15 );
-					light.target.position.copy(scene.position);
-					light.castShadow = true;
-					light.shadow.camera.left = -60;
-					light.shadow.camera.top = -60;
-					light.shadow.camera.right = 60;
-					light.shadow.camera.bottom = 60;
-					light.shadow.camera.near = 20;
-					light.shadow.camera.far = 200;
-					light.shadow.bias = -.0001
-					light.shadow.mapSize.height = light.shadow.mapSize.height = 2048;
-					light.shadow.mapSize.width = .7;
-					scene.add(light);
-					
-					// Textures
-					textureloader = new THREE.TextureLoader();
+          camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+          camera.position.set( 60, 80, 80 );
+          camera.lookAt( scene.position );
+          scene.add( camera );
         
-          // Objects
-					addGround();  
+          addGround();  
+        
           addPlayer();
-					
-					// Initial settings
-					max_cubes = 5;
-					paused = true;
-					playLevel();
-					
+          
+          cubes = [];
+
+          requestAnimationFrame( animate );
       };
 
-    function playLevel(){
-			setInfo("Catch as many cubes as you can out of " + max_cubes + " cubes. Here we GO!");
-			paused = false;
-			cubes = [];
-			lost_cubes = 0;
-			cubetimer = setInterval(function() {addCube([Math.floor(Math.random() * 40 - 20) , 20, Math.floor(Math.random() * 40 - 20)])}, 3000);
-			requestAnimationFrame(animate);
+    function play(){
+			cubetimer = setInterval(function() {addCube([Math.floor(Math.random() * 40) , 20, Math.floor(Math.random() * 40)])}, 1000);
+			
 		};
 		
-		function stopLevel(){
-			console.log("Level stopped");
-			clearInterval(cubetimer);
-			setInfo("Level over! You catched " + (max_cubes-lost_cubes) + " out of " + max_cubes + " cubes!");
-			
-			setTimeout(function (){
-			
-				cubes.forEach(function(cube) {
-					if(cube != 'undefined'){
-						//console.log(cube);
-						scene.remove(cube);
-					}
-				});
-	
-				setInfo("Next level! " + (max_cubes + 5) + " cubes!");
-
-				setTimeout(function(){
-					max_cubes += 5
-					playLevel();
-					paused = false;
-				}, 3000);
-				
-				
-			}, 3000);
-		};
+		function restart(){
 		
-		function setInfo(text){
-			document.getElementById("infobox").innerHTML = text;
-		}
+		};
 		
 		function animate() {
       //Loop:
-			if(paused == false){
-				requestAnimationFrame(animate);
-			}
-      
+      requestAnimationFrame( animate );
       // Simulate:
       scene.simulate();
-			camera.lookAt(player.position);
-			// If level completed stop in 3 secodns
-			if(checkConditions() == false && paused == false){
-				paused = true;
-				setTimeout(function (){
-					stopLevel();
-				}, 3000);
-			}
-			
       // Render:
       renderer.render( scene, camera);
     };
-		
-		function checkConditions(){
-			if(cubes.length >= max_cubes){
-				return false;
-			}
-		}
     
     function addPlayer(){
-      var player_geometry = new THREE.CubeGeometry( 40, 5, 40 );
-      var player_material = Physijs.createMaterial(new THREE.MeshLambertMaterial({ map: textureloader.load( 'images/player.jpg' ) }), 1.0, 0.0);
-			player_material.map.wrapS = player_material.map.wrapT = THREE.RepeatWrapping;
-			player_material.map.repeat.set(1, 1);
-			
-      player = new Physijs.BoxMesh(player_geometry, player_material, 30);
+      var player_geometry = new THREE.CubeGeometry( 20, 5, 20 );
+      var player_material = new THREE.MeshBasicMaterial({ color: 0xbeedf4, wireframe:false });
+      player = new Physijs.BoxMesh(player_geometry, player_material);
       player.position.set(0,-20,0);
-			player.receiveShadow = true;
-			player.setAngularFactor(0, 0, 0);
-			player.setLinearFactor(0, 0, 0);
-			
-			var player_g_up = new THREE.CubeGeometry(5, 5, 40);
-			var pad_up = new Physijs.BoxMesh(player_g_up, player_material, 20);
-			pad_up.position.set(18, 5, 0);
-			
-			var player_g_down = new THREE.CubeGeometry(5, 5, 40);
-			var pad_down = new Physijs.BoxMesh(player_g_down, player_material, 20);
-			pad_down.position.set(-18, 5, 0);
-			
-			var player_g_left = new THREE.CubeGeometry(32, 5, 5);
-			var pad_left = new Physijs.BoxMesh(player_g_left, player_material, 20);
-			pad_left.position.set(0, 5, -18);
-			
-			var player_g_right = new THREE.CubeGeometry(32, 5, 5);
-			var pad_right = new Physijs.BoxMesh(player_g_right, player_material, 20);
-			pad_right.position.set(0, 5, 18);
-			
-			
-			player.add(pad_up);
-			player.add(pad_down);
-			player.add(pad_left);
-			player.add(pad_right);
-			
-      scene.add(player);
-      
-			/*
-			constraint = new Physijs.DOFConstraint(player, new THREE.Vector3( 0, 10, 0 ));
-      scene.addConstraint(constraint);
+      scene.add( player );
+      constraint = new Physijs.DOFConstraint(player, new THREE.Vector3( 0, 10, 0 ));
+      scene.addConstraint( constraint );
       constraint.setAngularLowerLimit( new THREE.Vector3( 0, 0, 0 ) );
       constraint.setAngularUpperLimit( new THREE.Vector3( 0, 0, 0 ) );
-      */
+      
     }
     
     function addGround(){
       var ground_geometry = new THREE.CubeGeometry( 170, 2, 170 );
-      var ground_material = Physijs.createMaterial(new THREE.MeshLambertMaterial({ map: textureloader.load( 'images/marble.jpg' ) }), 1.0, 0.0);
-			ground_material.map.wrapS = ground_material.map.wrapT = THREE.RepeatWrapping;
-			ground_material.map.repeat.set(5, 5);
-			
+      var ground_material = new THREE.MeshBasicMaterial({ color: 0xd1f7a0, wireframe:false });
       ground = new Physijs.BoxMesh(ground_geometry, ground_material, 0);
       ground.position.set(0,-40,0);
-			ground.receiveShadow = true;
-			ground.name = 'ground'
       
       scene.add( ground );
     }
     
     function addCube(position){
-			var cube_geometry = new THREE.CubeGeometry(20, 20, 20);
-			var cube_material = Physijs.createMaterial(new THREE.MeshLambertMaterial({map: textureloader.load( 'images/box.jpg' )}), 1.0, 0.1);
-			cube_material.map.wrapS = cube_material.map.wrapT = THREE.RepeatWrapping;
-			cube_material.map.repeat.set(1.0, 1.0);
-
-			var cube = new Physijs.BoxMesh(cube_geometry, cube_material, 10);
-			cube.position.set( position[0], position[1], position[2] );
-			cube.castShadow = true;
-
-			cube.addEventListener( 'collision', function(other_object, relative_velocity, relative_rotation, contact_normal) {
-				if(other_object.name == 'ground'){
-					if(this != 'undefined'){
-						scene.remove(this);
-						lost_cubes += 1;
-					}
-				}
-			});
-				
-			scene.add(cube);
-			cubes.push(cube);
-			
+      var cube_geometry = new THREE.CubeGeometry( 5, 5, 5 );
+      var cube_material = new THREE.MeshBasicMaterial({ color: 0x888888, wireframe:true });
+      var cube = new Physijs.BoxMesh(cube_geometry, cube_material);
+      cube.position.set( position[0], position[1], position[2] );
+      
+      scene.add( cube );
+      cubes.push( cube );
     }
     
     function movePlayer(direction){
+      console.log(direction);
       if(direction.keyCode == 37){
         //LEFT
-        player.setLinearVelocity(new THREE.Vector3(-20,0,0));
+        player.setLinearVelocity(new THREE.Vector3(-10,0,0));
       }
       else if (direction.keyCode == 38){
         //UP
-        player.setLinearVelocity(new THREE.Vector3(0,0,-20));
-				//camera.position.y += 10;
+        player.setLinearVelocity(new THREE.Vector3(0,0,-10));
       }
       else if (direction.keyCode == 39){
         //RIGHT
-        player.setLinearVelocity(new THREE.Vector3(20,0,0));
+        player.setLinearVelocity(new THREE.Vector3(10,0,0));
       }
       else if (direction.keyCode == 40){
         //DOWN
-        player.setLinearVelocity(new THREE.Vector3(0,0,20));
-				//camera.position.y -= 10;
+        player.setLinearVelocity(new THREE.Vector3(0,0,10));
       }
-			
-			else if (direction.keyCode == 65){
-				//A
-				camera.position.x -= 10;
-			}
-			else if (direction.keyCode == 68){
-				//D
-				camera.position.x += 10;
-			}
-			else if (direction.keyCode == 83){
-				//S
-				camera.position.z -= 10;
-			}
-			else if (direction.keyCode == 87){
-				//W
-				camera.position.z += 10;
-			}
-			//console.log(camera.position);
       
     }
     
     window.onload = initialize();
     
     window.onkeydown = function(e){
-      movePlayer(e);
-      return false;
+       movePlayer(e);
+       return false;
     };
 
   </script>
